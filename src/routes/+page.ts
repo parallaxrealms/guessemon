@@ -19,6 +19,7 @@ export const load: PageLoad = async ({ fetch }) => {
 
   const types = pokemonDetails.types.map((typeInfo: any) => typeInfo.type.name).join(', ');
 
+  console.log(randomPokemon.name);
   return {
     answer: randomPokemon.name,
     imageUrl: pokemonDetails.sprites.other['official-artwork'].front_default,
