@@ -5,5 +5,4 @@
 	initializeStores();
 </script>
 
-<Drawer />
 <slot />
