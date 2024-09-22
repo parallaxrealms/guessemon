@@ -25,18 +25,15 @@
 		RadioItem,
 	} from '@skeletonlabs/skeleton';
 
-	// Function to handle user input (only alphabetic characters allowed)
 	function handleInput(event: Event, attemptIndex: number) {
 		const input = (event.target as HTMLInputElement).value;
 		userGuesses[attemptIndex] = input.replace(/[^a-zA-Z]/g, '');
 	}
 
-	// Function to change mode based on radio selection (Retro, Ultra, Master)
 	async function changeMode(): Promise<void> {
 		await filterPokemonByMode();
 	}
 
-	// Function to filter Pokémon based on selected mode (Retro, Ultra, Master)
 	async function filterPokemonByMode(): Promise<void> {
 		// Adjust filtering logic based on the selected mode
 		if (modeValue === 0) {
@@ -54,7 +51,6 @@
 			filteredNames = filteredOutNames;
 		}
 
-		// Pick a new random Pokémon from the filtered list
 		const newAnswer =
 			filteredNames[Math.floor(Math.random() * filteredNames.length)];
 
@@ -66,7 +62,6 @@
 		}
 	}
 
-	// Function to fetch new Pokémon details from PokeAPI (client-side fetch in onMount)
 	async function getNewPokemonDetails(pokemonName: string) {
 		try {
 			const res = await fetch(
@@ -140,17 +135,13 @@
 		}
 	}
 
-	// onMount: Execute only when the component is mounted on the client
 	onMount(async () => {
-		// Fetch the Pokémon data once the component is mounted
 		try {
-			// Fetch the Pokémon list and filter
 			const response = await fetch(
 				'https://pokeapi.co/api/v2/pokemon?limit=10000',
 			);
 			const data = await response.json();
 
-			// Filter out non-alphabetical and special form Pokémon
 			filteredOutNames = data.results.filter(
 				(p: any) =>
 					/^[a-zA-Z]+$/.test(p.name) &&
@@ -184,7 +175,6 @@
 			console.error('Error fetching Pokémon list:', error);
 		}
 
-		// Set up the light switch for theme changes
 		const lightSwitchElement = document.querySelector('light-switch');
 		if (lightSwitchElement) {
 			lightSwitchElement.addEventListener('change', (event: Event) => {
@@ -206,28 +196,22 @@
 
 <div class="card w-screen m-auto text-center">
 	{#if answer}
-		<!-- Render only when the answer is available -->
 		<div class="flex flex-col items-center justify-center md:min-h-screen">
-			<h1 class="text-2xl font-bold mb-4">Guessémon</h1>
-
-			<!-- Pokémon card placeholder with question mark -->
+			<h1 class="text-2xl font-bold mb-2">Guessémon</h1>
 			<div
 				class="w-64 h-64 bg-gradient-to-br variant-gradient-error-warning flex items-center justify-center rounded-lg relative"
 			>
 				{#if hasWon || attempts >= maxAttempts}
-					<!-- Show actual Pokémon image after win or game over -->
 					<img
 						src={imageUrl}
 						alt={answer}
 						class="absolute inset-0 w-full h-full object-fit rounded-lg"
 					/>
 				{:else}
-					<!-- Show question mark until game ends -->
-					<h1 class="text-5xl font-bold text-white">?</h1>
+					<h1 class="h1 font-bold text-white text-9xl">?</h1>
 				{/if}
 			</div>
 
-			<!-- Render the first set of letter boxes -->
 			<div
 				class="letter-boxes grid"
 				style="grid-template-columns: repeat({answer.length}, 2.5rem);"
@@ -249,9 +233,8 @@
 			</div>
 
 			{#if attempts > 0}
-				<!-- Render the second set of letter boxes after the first attempt -->
 				<div
-					class="letter-boxes grid mt-6"
+					class="letter-boxes grid"
 					style="grid-template-columns: repeat({answer.length}, 2.5rem);"
 				>
 					{#each answer.split('') as _, index}
@@ -272,9 +255,8 @@
 			{/if}
 
 			{#if attempts > 1}
-				<!-- Render the third set of letter boxes after the second attempt -->
 				<div
-					class="letter-boxes grid mt-6"
+					class="letter-boxes grid"
 					style="grid-template-columns: repeat({answer.length}, 2.5rem);"
 				>
 					{#each answer.split('') as _, index}
@@ -294,7 +276,6 @@
 				</div>
 			{/if}
 
-			<!-- Input box for the current guess -->
 			<input
 				type="text"
 				bind:value={userGuesses[attempts]}
@@ -305,25 +286,26 @@
 				disabled={hasWon || attempts >= maxAttempts}
 			/>
 
-			<!-- Submit and try again buttons -->
 			<div>
 				<button
-					class="btn-lg mt-4 px-4 py-2 btn variant-ringed-primary hover:bg-gradient-to-br variant-gradient-primary-secondary text-white font-bold"
+					class="btn-lg mt-4 px-4 py-1 btn variant-ringed-primary hover:bg-gradient-to-br variant-gradient-primary-secondary text-white font-bold"
 					on:click={checkGuess}
-					disabled={hasWon || attempts >= maxAttempts}
+					disabled={hasWon ||
+						attempts >= maxAttempts ||
+						userGuesses[attempts].length !== answer.length}
 				>
 					Submit Guess
 				</button>
 				{#if hasWon}
 					<button
-						class="btn bg-gradient-to-br variant-gradient-primary-tertiary font-semibold mt-4 px-4 py-2 inline"
+						class="btn bg-gradient-to-br variant-gradient-primary-tertiary font-semibold mt-4 px-4 py-1 inline"
 						on:click={resetGame}
 					>
 						Try Again
 					</button>
 				{:else if attempts >= maxAttempts}
 					<button
-						class="btn bg-gradient-to-br variant-gradient-primary-tertiary font-semibold mt-4 px-4 py-2 inline"
+						class="btn bg-gradient-to-br variant-gradient-primary-tertiary font-semibold mt-4 px-4 py-1 inline"
 						on:click={resetGame}
 					>
 						Try Again
@@ -331,8 +313,7 @@
 				{/if}
 			</div>
 
-			<!-- Hint visibility and hint section -->
-			<div class="mt-4 p-4 w-3/4 flex justify-between items-center">
+			<div class="p-2 w-3/4 flex justify-between items-center">
 				<div class="flex items-center">
 					<input
 						id="showHint"
@@ -351,14 +332,13 @@
 				</div>
 			</div>
 
-			<!-- Display "You Win!" or "Game Over" message -->
 			{#if hasWon}
-				<div class="mt-4 p-4 bg-green-200 text-black rounded">
+				<div class="mt-4 p-4 bg-green-200 text-black rounded z-50">
 					<strong>You Win!</strong> The Pokémon was {answer}. You guessed it in {attempts}
 					tries.
 				</div>
 			{:else if attempts >= maxAttempts}
-				<div class="mt-4 p-4 bg-red-300 text-black rounded">
+				<div class="mt-4 p-4 bg-red-300 text-black rounded z-50">
 					<strong>Game Over!</strong> The Pokémon was {answer}.
 				</div>
 			{/if}
@@ -375,7 +355,6 @@
 	{/if}
 </div>
 
-<!-- League mode selector (RadioGroup) -->
 <div
 	class="md:absolute md:left-0 md:top-40 modes-card w-full md:w-64 h-64 mt-8"
 >
@@ -439,7 +418,6 @@
 	</div>
 </div>
 
-<!-- Rules Section -->
 <div
 	class="md:absolute md:right-0 md:top-40 rules-card card bg-stone-300 dark:bg-sky-900 w-full md:w-64 h-64 mt-8"
 >
