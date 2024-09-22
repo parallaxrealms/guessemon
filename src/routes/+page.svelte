@@ -57,7 +57,6 @@
 
 		// Check if filteredNames has any results
 		if (filteredNames.length === 0) {
-			console.error('No Pokémon available for the selected mode.');
 			return;
 		}
 
