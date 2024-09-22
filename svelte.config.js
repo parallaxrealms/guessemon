@@ -1,15 +1,16 @@
-import adapter from '@sveltejs/adapter-auto';
+import adapter from '@sveltejs/adapter-vercel';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 const config = {
 	// Preprocess setup including PostCSS (for TailwindCSS)
 	preprocess: vitePreprocess({
-		// Ensure PostCSS is used for CSS preprocessing
 		postcss: true
 	}),
 
 	kit: {
-		adapter: adapter()
+		adapter: adapter({
+
+		})
 	}
 };
 
