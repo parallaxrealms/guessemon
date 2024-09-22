@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-vercel';
+import adapter from '@sveltejs/adapter-cloudflare';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 const config = {
@@ -9,7 +9,10 @@ const config = {
 
 	kit: {
 		adapter: adapter({
-
+			// Any Cloudflare-specific options
+			pages: 'dist', // (default) directory to output the built site
+			assets: 'public', // (default) directory for static assets
+			fallback: null // (optional) if using SPA mode
 		})
 	}
 };
