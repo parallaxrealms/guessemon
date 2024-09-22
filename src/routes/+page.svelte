@@ -7,11 +7,10 @@
 	let pokemonType: string | undefined; // Pokémon type
 	let filteredOutNames: { name: string; generation: number }[] = [];
 	let modeValue: number = data.modeValue; // Initial mode value from the server load
-	let userGuess: string = '';
-	let submittedGuess: string = ''; // This will store the last submitted guess
+	let userGuesses: string[] = ['', '', '']; // Store guesses for each attempt
 	let attempts: number = 0;
 	let hintGiven: boolean = false;
-	let feedback: string[] = [];
+	let feedback: string[][] = [[], [], []]; // Store feedback for each attempt
 	let showHintCheckbox: boolean = true;
 	let hasWon: boolean = false;
 	const maxAttempts: number = 3;
@@ -27,9 +26,9 @@
 	} from '@skeletonlabs/skeleton';
 
 	// Function to handle user input (only alphabetic characters allowed)
-	function handleInput(event: Event) {
+	function handleInput(event: Event, attemptIndex: number) {
 		const input = (event.target as HTMLInputElement).value;
-		userGuess = input.replace(/[^a-zA-Z]/g, '');
+		userGuesses[attemptIndex] = input.replace(/[^a-zA-Z]/g, '');
 	}
 
 	// Function to change mode based on radio selection (Retro, Ultra, Master)
@@ -55,11 +54,6 @@
 			filteredNames = filteredOutNames;
 		}
 
-		// Check if filteredNames has any results
-		if (filteredNames.length === 0) {
-			return;
-		}
-
 		// Pick a new random Pokémon from the filtered list
 		const newAnswer =
 			filteredNames[Math.floor(Math.random() * filteredNames.length)];
@@ -69,7 +63,6 @@
 			await getNewPokemonDetails(answer);
 			resetGame();
 		} else {
-			console.error('No valid Pokémon found in the filtered list.');
 		}
 	}
 
@@ -90,11 +83,10 @@
 	}
 
 	function resetGame() {
-		userGuess = '';
-		submittedGuess = '';
+		userGuesses = ['', '', ''];
 		attempts = 0;
 		hintGiven = false;
-		feedback = [];
+		feedback = [[], [], []];
 		hasWon = false;
 	}
 
@@ -103,8 +95,9 @@
 			return;
 		}
 
-		attempts++;
-		feedback = [];
+		const userGuess = userGuesses[attempts];
+		feedback[attempts] = [];
+
 		if (answer) {
 			const answerArray = answer.toLowerCase().split('');
 			const guessArray = userGuess.toLowerCase().split('');
@@ -113,33 +106,32 @@
 			// First pass: Mark correct letters in the correct position
 			for (let i = 0; i < answerArray.length; i++) {
 				if (guessArray[i] === answerArray[i]) {
-					feedback[i] = 'green';
+					feedback[attempts][i] = 'green';
 					answerUsed[i] = true;
 				}
 			}
 
 			// Second pass: Mark remaining letters
 			for (let i = 0; i < answerArray.length; i++) {
-				if (!feedback[i]) {
+				if (!feedback[attempts][i]) {
 					const foundIndex = answerArray.findIndex(
 						(letter, index) => letter === guessArray[i] && !answerUsed[index],
 					);
 
 					if (foundIndex !== -1) {
-						feedback[i] = 'yellow';
+						feedback[attempts][i] = 'yellow';
 						answerUsed[foundIndex] = true;
 					} else {
-						feedback[i] = 'gray';
+						feedback[attempts][i] = 'gray';
 					}
 				}
 			}
 
-			if (feedback.every((f) => f === 'green')) {
+			if (feedback[attempts].every((f) => f === 'green')) {
 				hasWon = true;
 			}
 
-			submittedGuess = userGuess;
-			userGuess = '';
+			attempts++;
 		}
 
 		if (attempts >= 2 && !hintGiven && showHintCheckbox) {
@@ -235,32 +227,78 @@
 				{/if}
 			</div>
 
-			<!-- Render feedback for each letter in the user's guess -->
+			<!-- Render the first set of letter boxes -->
 			<div
-				class="grid mt-6"
+				class="letter-boxes grid"
 				style="grid-template-columns: repeat({answer.length}, 2.5rem);"
 			>
 				{#each answer.split('') as _, index}
 					<div
 						class="w-10 h-10 border-2 border-stone-900 dark:border-stone-100 flex items-center justify-center rounded-md text-lg font-semibold
-						{feedback[index] === 'green'
+						{feedback[0][index] === 'green'
 							? 'bg-green-400'
-							: feedback[index] === 'yellow'
+							: feedback[0][index] === 'yellow'
 								? 'bg-yellow-400'
-								: feedback[index] === 'gray'
+								: feedback[0][index] === 'gray'
 									? 'bg-gray-400'
 									: ''}"
 					>
-						{submittedGuess[index] || userGuess[index] || ''}
+						{userGuesses[0][index] || ''}
 					</div>
 				{/each}
 			</div>
 
-			<!-- Input box for user's guess -->
+			{#if attempts > 0}
+				<!-- Render the second set of letter boxes after the first attempt -->
+				<div
+					class="letter-boxes grid mt-6"
+					style="grid-template-columns: repeat({answer.length}, 2.5rem);"
+				>
+					{#each answer.split('') as _, index}
+						<div
+							class="w-10 h-10 border-2 border-stone-900 dark:border-stone-100 flex items-center justify-center rounded-md text-lg font-semibold
+						{feedback[1][index] === 'green'
+								? 'bg-green-400'
+								: feedback[1][index] === 'yellow'
+									? 'bg-yellow-400'
+									: feedback[1][index] === 'gray'
+										? 'bg-gray-400'
+										: ''}"
+						>
+							{userGuesses[1][index] || ''}
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			{#if attempts > 1}
+				<!-- Render the third set of letter boxes after the second attempt -->
+				<div
+					class="letter-boxes grid mt-6"
+					style="grid-template-columns: repeat({answer.length}, 2.5rem);"
+				>
+					{#each answer.split('') as _, index}
+						<div
+							class="w-10 h-10 border-2 border-stone-900 dark:border-stone-100 flex items-center justify-center rounded-md text-lg font-semibold
+						{feedback[2][index] === 'green'
+								? 'bg-green-400'
+								: feedback[2][index] === 'yellow'
+									? 'bg-yellow-400'
+									: feedback[2][index] === 'gray'
+										? 'bg-gray-400'
+										: ''}"
+						>
+							{userGuesses[2][index] || ''}
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			<!-- Input box for the current guess -->
 			<input
 				type="text"
-				bind:value={userGuess}
-				on:input={handleInput}
+				bind:value={userGuesses[attempts]}
+				on:input={(event) => handleInput(event, attempts)}
 				maxlength={answer.length}
 				class="p-2 border rounded w-64 text-center text-xl mt-4 text-stone-800"
 				placeholder="Type Your Guess!"
@@ -327,7 +365,12 @@
 		</div>
 	{:else}
 		<div class="flex justify-center items-center h-screen">
-			<h1>Loading...</h1>
+			<h1 class="h1">
+				<span
+					class="bg-gradient-to-br from-blue-500 to-cyan-300 bg-clip-text text-transparent box-decoration-clone"
+					>Loading...</span
+				>
+			</h1>
 		</div>
 	{/if}
 </div>
