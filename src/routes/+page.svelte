@@ -2,21 +2,11 @@
 	/** @type {import('./$types').PageData} */
 	export let data;
 
-	let answer: string | undefined = data.answer;
-	let imageUrl: string | undefined = data.imageUrl; // Pokémon image URL
-	let pokemonType: string | undefined = data.pokemonType; // Pokémon type
-	let filteredOutNames: { name: string; generation: number }[] =
-		data.filteredOutNames;
+	let answer: string | undefined;
+	let imageUrl: string | undefined; // Pokémon image URL
+	let pokemonType: string | undefined; // Pokémon type
+	let filteredOutNames: { name: string; generation: number }[] = [];
 	let modeValue: number = data.modeValue; // Initial mode value from the server load
-
-	import { onMount } from 'svelte';
-	import {
-		LightSwitch,
-		setModeUserPrefers,
-		RadioGroup,
-		RadioItem,
-	} from '@skeletonlabs/skeleton';
-
 	let userGuess: string = '';
 	let submittedGuess: string = ''; // This will store the last submitted guess
 	let attempts: number = 0;
@@ -26,9 +16,17 @@
 	let hasWon: boolean = false;
 	const maxAttempts: number = 3;
 	let answerType: string | null = null;
-	let filteredNames: { name: string; generation: number }[] = filteredOutNames;
+	let filteredNames: { name: string; generation: number }[] = [];
 
-	// Handle user input and restrict it to alphabetic characters only
+	import { onMount } from 'svelte';
+	import {
+		LightSwitch,
+		setModeUserPrefers,
+		RadioGroup,
+		RadioItem,
+	} from '@skeletonlabs/skeleton';
+
+	// Function to handle user input (only alphabetic characters allowed)
 	function handleInput(event: Event) {
 		const input = (event.target as HTMLInputElement).value;
 		userGuess = input.replace(/[^a-zA-Z]/g, '');
@@ -57,15 +55,26 @@
 			filteredNames = filteredOutNames;
 		}
 
+		// Check if filteredNames has any results
+		if (filteredNames.length === 0) {
+			console.error('No Pokémon available for the selected mode.');
+			return;
+		}
+
 		// Pick a new random Pokémon from the filtered list
 		const newAnswer =
 			filteredNames[Math.floor(Math.random() * filteredNames.length)];
-		answer = newAnswer.name;
-		await getNewPokemonDetails(answer);
-		resetGame();
+
+		if (newAnswer) {
+			answer = newAnswer.name;
+			await getNewPokemonDetails(answer);
+			resetGame();
+		} else {
+			console.error('No valid Pokémon found in the filtered list.');
+		}
 	}
 
-	// Function to fetch new Pokémon details from PokeAPI
+	// Function to fetch new Pokémon details from PokeAPI (client-side fetch in onMount)
 	async function getNewPokemonDetails(pokemonName: string) {
 		try {
 			const res = await fetch(
@@ -140,7 +149,51 @@
 		}
 	}
 
-	onMount(() => {
+	// onMount: Execute only when the component is mounted on the client
+	onMount(async () => {
+		// Fetch the Pokémon data once the component is mounted
+		try {
+			// Fetch the Pokémon list and filter
+			const response = await fetch(
+				'https://pokeapi.co/api/v2/pokemon?limit=10000',
+			);
+			const data = await response.json();
+
+			// Filter out non-alphabetical and special form Pokémon
+			filteredOutNames = data.results.filter(
+				(p: any) =>
+					/^[a-zA-Z]+$/.test(p.name) &&
+					p.name.length >= 5 &&
+					p.name.length <= 10 &&
+					!p.name.includes('-'),
+			);
+
+			// Fetch generation info for filtered Pokémon
+			const pokemonWithGenerations = await Promise.all(
+				filteredOutNames.map(async (pokemon: any) => {
+					const speciesResponse = await fetch(
+						pokemon.url.replace('/pokemon/', '/pokemon-species/'),
+					);
+					const speciesData = await speciesResponse.json();
+					const generationNumber = parseInt(
+						speciesData.generation.url.split('/').slice(-2, -1)[0],
+					);
+					return { name: pokemon.name, generation: generationNumber };
+				}),
+			);
+			filteredOutNames = pokemonWithGenerations;
+
+			// Set initial answer and fetch details
+			if (answer) {
+				await getNewPokemonDetails(answer);
+			} else {
+				await filterPokemonByMode();
+			}
+		} catch (error) {
+			console.error('Error fetching Pokémon list:', error);
+		}
+
+		// Set up the light switch for theme changes
 		const lightSwitchElement = document.querySelector('light-switch');
 		if (lightSwitchElement) {
 			lightSwitchElement.addEventListener('change', (event: Event) => {
